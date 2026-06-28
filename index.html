@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEZUX HYBRID | Cyber Arcade</title>
+    <style>
+        :root {
+            --bg: #050608;
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #8b5cf6;
+            --err: #ff4444;
+            --panel: rgba(16, 20, 26, 0.6);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; user-select: none; }
+
+        body { background: var(--bg); color: #fff; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+
+        .grid-bg { position: absolute; width: 100%; height: 100%; background-image: linear-gradient(rgba(0,243,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,243,255,0.05) 1px, transparent 1px); background-size: 50px 50px; z-index: -1; }
+
+        .container { width: 90%; max-width: 450px; text-align: center; padding: 2.5rem; background: var(--panel); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+
+        #action-btn { width: 220px; height: 220px; border-radius: 50%; margin: 2rem auto; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 8px solid var(--neon-purple); background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent); font-weight: 900; font-size: 1.2rem; text-transform: uppercase; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; overflow: hidden; }
+
+        #action-btn:active { transform: scale(0.92); }
+        #action-btn.ready { border-color: var(--neon-cyan); box-shadow: 0 0 40px var(--neon-cyan); }
+        #action-btn.waiting { border-color: var(--neon-pink); }
+        #action-btn.error { border-color: var(--err); color: var(--err); cursor: not-allowed; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem; }
+        .stat-box { background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+
+        #results-overlay { position: fixed; inset: 0; background: rgba(5,6,8,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(10px); }
+        .result-card { border: 2px solid var(--neon-cyan); padding: 3rem; border-radius: 40px; background: rgba(0,0,0,0.8); text-align: center; box-shadow: 0 0 60px rgba(0,243,255,0.2); }
+        
+        button.reboot { margin-top: 2rem; padding: 15px 40px; border-radius: 30px; cursor: pointer; border: 2px solid var(--neon-cyan); background: transparent; color: white; font-weight: 800; transition: 0.3s; text-transform: uppercase; letter-spacing: 3px; }
+        button.reboot:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 20px var(--neon-cyan); }
+
+        .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: ripple 0.6s linear; }
+        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+
+    <div class="container">
+        <h1 style="color:var(--neon-cyan); margin-bottom: 1rem; letter-spacing: 2px;">WEZUX HYBRID</h1>
+        <div class="stat-grid">
+            <div class="stat-box">REACT: <span id="r-val">0</span>ms</div>
+            <div class="stat-box">CLICKS: <span id="c-val">0</span></div>
+        </div>
+        <div id="action-btn">START</div>
+        <div id="msg" style="color:rgba(255,255,255,0.6); font-size: 0.9rem;">INITIALIZE PROTOCOL</div>
+    </div>
+
+    <div id="results-overlay">
+        <div class="result-card">
+            <h2 id="grade" style="font-size: 3.5rem; margin-bottom: 0.5rem; color:var(--neon-pink)">--</h2>
+            <div id="score-text" style="font-size: 1.2rem; margin-bottom: 2rem; color: #aaa;"></div>
+            <button class="reboot" onclick="location.reload()">REBOOT SYSTEM</button>
+        </div>
+    </div>
+
+<script>
+    const btn = document.getElementById('action-btn'), msg = document.getElementById('msg');
+    let state = 0, startTime, reactionTime, clicks = 0, timer;
+
+    btn.addEventListener('mousedown', (e) => {
+        if (state === 0) {
+            state = 1; btn.innerText = "WAITING"; btn.className = 'waiting'; msg.innerText = "STANDBY...";
+            timer = setTimeout(() => {
+                state = 2; btn.innerText = "CLICK!"; btn.className = 'ready'; startTime = Date.now(); msg.innerText = "PROTOCOL ACTIVE";
+            }, Math.random() * 2000 + 1500);
+        } else if (state === 1) {
+            clearTimeout(timer); state = 4; btn.innerText = "FALSE START"; btn.className = 'error'; msg.innerText = "SYSTEM REBOOT REQUIRED";
+            setTimeout(() => { document.getElementById('results-overlay').style.display = 'flex'; document.getElementById('grade').innerText = "ERROR"; document.getElementById('score-text').innerText = "FALSE START DETECTED"; }, 500);
+        } else if (state === 2) {
+            reactionTime = Date.now() - startTime; document.getElementById('r-val').innerText = reactionTime; state = 3; btn.innerText = "TAP FAST!"; btn.className = '';
+            setTimeout(showResults, 5000);
+        } else if (state === 3) {
+            clicks++; document.getElementById('c-val').innerText = clicks;
+        }
+    });
+
+    function showResults() {
+        const index = (clicks / reactionTime) * 1000;
+        document.getElementById('results-overlay').style.display = 'flex';
+        let rank = index < 50 ? "HUMAN" : index < 100 ? "CYBER" : index < 150 ? "NIGHT CORE" : index < 200 ? "DAY CORE" : index < 300 ? "ARTIFICIAL INTELLIGENCE" : "WEZUX";
+        document.getElementById('grade').innerText = rank;
+        document.getElementById('score-text').innerText = "PERFORMANCE INDEX: " + index.toFixed(1);
+    }
+</script>
+</body>
+</html>
